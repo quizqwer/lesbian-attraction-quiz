@@ -1,0 +1,1364 @@
+<title>女同人格測驗</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700;900&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* layout concept: one-screen "app" — start card, a question stage with a
+   back/progress rail, and a result stage with a hexagon trait-spectrum
+   chart, swapped via [hidden]; flat neutral paper ground, no gendered
+   decoration, a single earthy accent instead of a pink/pastel one */
+:root{
+  --bg:        #f5f3ee;
+  --surface:   #ffffff;
+  --surface-2: #eae6dd;
+  --ink:       #211f1c;
+  --ink-soft:  #6b665d;
+  --line:      rgba(33,31,28,0.12);
+  --accent:    #3c6e63;
+  --accent-2:  #a98f4b;
+  --accent-soft: rgba(60,110,99,0.12);
+
+  --display: "Noto Serif TC", "PMingLiU", serif;
+  --body: "Noto Sans TC", "PingFang TC", system-ui, sans-serif;
+
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:        #17181a;
+    --surface:   #212224;
+    --surface-2: #2a2b2d;
+    --ink:       #ece9e2;
+    --ink-soft:  #a7a39a;
+    --line:      rgba(236,233,226,0.12);
+    --accent:    #6fb3a3;
+    --accent-2:  #d1b872;
+    --accent-soft: rgba(111,179,163,0.16);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:        #17181a;
+  --surface:   #212224;
+  --surface-2: #2a2b2d;
+  --ink:       #ece9e2;
+  --ink-soft:  #a7a39a;
+  --line:      rgba(236,233,226,0.12);
+  --accent:    #6fb3a3;
+  --accent-2:  #d1b872;
+  --accent-soft: rgba(111,179,163,0.16);
+}
+
+*{box-sizing:border-box;}
+[hidden]{display:none !important;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--body);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+.corner-hex{
+  position:fixed; top:-60px; right:-60px;
+  width:260px; height:260px;
+  opacity:0.5; z-index:0; pointer-events:none;
+  color:var(--line);
+}
+@media (prefers-reduced-motion:no-preference){
+  .stage{ animation: rise .4s ease both; }
+  @keyframes rise{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+}
+
+.wrap{
+  position:relative; z-index:1;
+  max-width:560px; margin:0 auto;
+  padding-top: 36px;
+  padding-bottom: 56px;
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+  padding-right: max(20px, env(safe-area-inset-right, 0px));
+  min-height:100svh;
+  display:flex; flex-direction:column;
+}
+
+.eyebrow{
+  font-family:var(--body); font-weight:700; font-size:14.5px;
+  letter-spacing:0.14em; text-transform:uppercase;
+  color:var(--accent);
+  margin:0 0 10px;
+}
+
+/* ---------- start ---------- */
+#start{ margin:auto 0; text-align:center; }
+#start h1{
+  font-family:var(--display); font-weight:900;
+  font-size:clamp(36px, 8.6vw, 50px);
+  line-height:1.25; margin:0 0 16px;
+  text-wrap:balance;
+}
+#start p.lede{
+  font-size:17.5px; line-height:1.8; color:var(--ink-soft);
+  margin:0 auto 32px; max-width:46ch;
+}
+.type-chips{
+  display:flex; flex-wrap:wrap; gap:8px; justify-content:center;
+  margin-bottom:32px;
+}
+.type-chip{
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:14.5px; font-weight:600; color:var(--ink);
+  background:var(--surface-2); border:1px solid var(--line);
+  border-radius:999px; padding:7px 14px 7px 10px;
+}
+.type-chip svg{ width:15px; height:15px; color:var(--accent); flex:none; }
+.btn-primary{
+  font-family:var(--body); font-weight:700; font-size:18.5px;
+  color:#fff; background:var(--ink);
+  border:none; border-radius:16px;
+  padding:16px 36px; cursor:pointer;
+}
+:root[data-theme="dark"] .btn-primary{ color:var(--bg); }
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .btn-primary{ color:var(--bg); }
+}
+.btn-primary:active{ transform:scale(0.98); }
+#start .meta{
+  margin-top:18px; font-size:14.5px; color:var(--ink-soft);
+}
+
+/* ---------- quiz ---------- */
+#quiz{ flex:1; display:flex; flex-direction:column; }
+.rail{
+  display:flex; align-items:center; gap:14px;
+  margin-bottom:26px;
+}
+.back-btn{
+  flex:none; width:38px; height:38px; border-radius:11px;
+  border:1px solid var(--line); background:var(--surface);
+  color:var(--ink-soft); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.back-btn svg{ width:18px; height:18px; }
+.back-btn:active{ transform:scale(0.95); }
+.rail-track{
+  flex:1; height:6px; border-radius:4px;
+  background:var(--line); overflow:hidden;
+}
+.rail-fill{
+  height:100%; border-radius:4px;
+  background:var(--accent);
+  transition:width .35s ease;
+}
+.rail-count{
+  font-variant-numeric:tabular-nums;
+  font-size:14.5px; font-weight:700; color:var(--ink-soft);
+  white-space:nowrap;
+}
+.q-title{
+  font-family:var(--display); font-weight:700;
+  font-size:clamp(24px,6vw,30px); line-height:1.5;
+  margin:0 0 24px;
+  text-wrap:balance;
+}
+.options{ display:flex; flex-direction:column; gap:10px; }
+.option{
+  text-align:left;
+  font-family:var(--body); font-size:17px; line-height:1.55; color:var(--ink);
+  background:var(--surface);
+  border:1px solid var(--line); border-radius:14px;
+  padding:16px 18px; cursor:pointer;
+  transition:border-color .15s ease, background .15s ease, transform .1s ease;
+}
+.option:hover{ border-color:var(--accent); }
+.option:active{ transform:scale(0.99); }
+.option.picked{
+  border-color:var(--accent);
+  background:var(--accent-soft);
+}
+
+/* ---------- result ---------- */
+.badge-row{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+.badge{
+  display:inline-flex; align-items:center; gap:7px;
+  font-family:var(--body); font-weight:700; font-size:15px;
+}
+.badge.primary{
+  color:#fff; background:var(--ink);
+  border-radius:999px; padding:8px 16px 8px 10px;
+}
+:root[data-theme="dark"] .badge.primary{ color:var(--bg); }
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .badge.primary{ color:var(--bg); }
+}
+.badge.secondary{
+  color:var(--ink-soft); background:transparent;
+  border:1px solid var(--line);
+  border-radius:999px; padding:7px 15px 7px 9px;
+}
+.badge svg{ width:15px; height:15px; }
+.badge-tp{
+  display:inline-flex; align-items:center;
+  font-family:var(--body); font-weight:700; font-size:15px;
+  color:var(--accent); background:var(--accent-soft);
+  border-radius:999px; padding:7px 15px;
+}
+.hero-icon-circle{
+  width:72px; height:72px; border-radius:50%;
+  background:var(--accent-soft); color:var(--accent);
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:16px;
+}
+.hero-icon-circle svg{ width:34px; height:34px; }
+
+.secondary-card{
+  background:var(--surface-2); border:1px solid var(--line);
+  border-radius:18px; padding:20px 20px 18px; margin-bottom:26px;
+}
+.secondary-head{ display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.mini-icon{
+  width:46px; height:46px; border-radius:50%; flex:none;
+  background:var(--surface); border:1px solid var(--line); color:var(--accent);
+  display:flex; align-items:center; justify-content:center;
+}
+.mini-icon svg{ width:22px; height:22px; }
+.secondary-card h3{
+  font-family:var(--display); font-weight:700; font-size:20px;
+  margin:0 0 2px;
+}
+.sec-tagline{ font-size:14px; color:var(--accent); font-weight:600; margin:0; }
+.secondary-card p#sec-desc{
+  font-size:15.5px; line-height:1.8; color:var(--ink-soft); margin:12px 0 0;
+}
+.trait-meta{ display:flex; flex-direction:column; gap:6px; margin:0 0 22px; }
+.trait-row{ display:flex; gap:10px; font-size:15px; line-height:1.55; }
+.trait-row .trait-label{
+  flex:none; width:48px; color:var(--ink-soft); font-weight:700;
+  font-size:13px; letter-spacing:0.04em; padding-top:1px;
+}
+.trait-row .trait-value{ color:var(--ink); }
+.sec-meta{ font-size:14px; color:var(--ink-soft); margin:8px 0 0; line-height:1.65; }
+
+#result h1{
+  font-family:var(--display); font-weight:900;
+  font-size:clamp(32px,8.6vw,46px); line-height:1.25;
+  margin:0 0 10px; text-wrap:balance;
+}
+#result .tagline{
+  font-size:17.5px; color:var(--accent); font-weight:700;
+  margin:0 0 20px;
+}
+#result .desc{
+  font-size:17px; line-height:1.9; color:var(--ink-soft);
+  margin:0 0 8px;
+}
+#result .desc.flavor{ margin-bottom:30px; }
+
+.spectrum-card{
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:18px; padding:24px 20px 20px; margin-bottom:28px;
+}
+.spectrum-card h2{
+  font-family:var(--body); font-weight:700; font-size:14.5px;
+  letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft);
+  margin:0 0 4px;
+}
+.spectrum-card .hint{
+  font-size:14px; color:var(--ink-soft); margin:0 0 10px; opacity:0.85;
+}
+.radar-figure{ position:relative; width:100%; max-width:320px; aspect-ratio:1; margin:0 auto; }
+.radar-figure svg{ position:absolute; inset:0; width:100%; height:100%; }
+.radar-vertex{
+  position:absolute; transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  width:68px; text-align:center;
+}
+.radar-vertex svg{ width:16px; height:16px; color:var(--accent); flex:none; position:static; }
+.radar-vertex .rv-name{ font-size:12.5px; font-weight:700; color:var(--ink); line-height:1.25; }
+
+.attraction-card{
+  background:var(--surface-2); border:1px solid var(--line);
+  border-radius:18px; padding:22px 22px 20px; margin-bottom:28px;
+}
+.attraction-card h2{
+  font-family:var(--body); font-weight:700; font-size:14.5px;
+  letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft);
+  margin:0 0 12px;
+}
+.attraction-card p{
+  font-size:16.5px; line-height:1.9; color:var(--ink); margin:0;
+}
+.chem-badge{
+  display:inline-block;
+  font-family:var(--body); font-weight:700; font-size:14px;
+  color:var(--accent); background:var(--accent-soft);
+  border-radius:999px; padding:6px 14px;
+  margin-bottom:12px;
+}
+
+#share-capture{ background:var(--bg); }
+
+.share-caption{
+  text-align:center; font-size:13.5px; color:var(--ink-soft);
+  margin-top:8px; letter-spacing:0.02em;
+}
+.support-card{
+  margin-top:28px; padding-top:22px; border-top:1px solid var(--line);
+  display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+}
+.support-card p{ font-size:15px; color:var(--ink-soft); margin:0; }
+.result-actions{ display:flex; gap:10px; flex-wrap:wrap; }
+.share-invite{
+  margin-top:24px; padding-top:22px; border-top:1px solid var(--line);
+  display:flex; flex-direction:column; align-items:flex-start; gap:12px;
+}
+.share-invite p{ font-size:16px; font-weight:600; color:var(--ink); margin:0; }
+.btn-ghost{
+  font-family:var(--body); font-weight:700; font-size:16px;
+  color:var(--ink); background:transparent;
+  border:1.5px solid var(--line); border-radius:14px;
+  padding:13px 22px; cursor:pointer;
+}
+.btn-ghost:active{ transform:scale(0.98); }
+.copied{ font-size:14.5px; color:var(--ink-soft); margin-top:10px; height:16px; }
+
+footer{
+  text-align:center; font-size:14px; color:var(--ink-soft);
+  margin-top:40px;
+}
+</style>
+
+<svg class="corner-hex" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+  <polygon points="100,10 182,55 182,145 100,190 18,145 18,55" stroke="currentColor" stroke-width="1.5"/>
+</svg>
+
+<div class="wrap">
+
+  <section id="start" class="stage">
+    <div class="eyebrow">女同人格 × 心動測驗 · 自適應</div>
+    <h1>你是哪一種<br>戀愛人設？</h1>
+    <p class="lede">測測你在女同圈是哪一種類型，也測測你容易被哪一種類型吸引，最後看看兩個結果合在一起的化學反應。</p>
+    <div class="type-chips" id="type-chips"></div>
+    <button class="btn-primary" id="start-btn">開始測驗</button>
+    <div class="meta">大約 4-5 分鐘 · 分兩階段進行 · 題目依答案即時調整 · 可返回修改答案</div>
+  </section>
+
+  <section id="quiz" class="stage" hidden>
+    <div class="rail">
+      <button class="back-btn" id="back-btn" type="button" aria-label="上一題">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="rail-track"><div class="rail-fill" id="rail-fill"></div></div>
+      <div class="rail-count" id="rail-count">1 / 20</div>
+    </div>
+    <h2 class="q-title" id="q-title"></h2>
+    <div class="options" id="q-options"></div>
+  </section>
+
+  <section id="result" class="stage" hidden>
+    <div id="share-capture">
+      <div class="eyebrow">測驗結果</div>
+      <div class="badge-row" id="r-badges"></div>
+      <div class="hero-icon" id="hero-icon"></div>
+      <h1 id="r-name"></h1>
+      <p class="tagline" id="r-tagline"></p>
+      <div class="trait-meta" id="r-traits"></div>
+      <p class="desc" id="r-desc"></p>
+      <p class="desc flavor" id="r-flavor"></p>
+
+      <div class="secondary-card" id="secondary-card" hidden>
+        <h2 style="font-family:var(--body);font-weight:700;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 14px;">副型介紹</h2>
+        <div class="secondary-head">
+          <span class="mini-icon" id="sec-icon"></span>
+          <div>
+            <h3 id="sec-name"></h3>
+            <p class="sec-tagline" id="sec-tagline"></p>
+          </div>
+        </div>
+        <p id="sec-desc"></p>
+        <p class="sec-meta" id="sec-meta"></p>
+      </div>
+
+      <div class="spectrum-card">
+        <h2>T / P 傾向</h2>
+        <p class="hint">純粹呈現這次回答的比例，不是定論，怎麼定義自己由妳決定</p>
+        <div id="tp-bar-wrap" style="margin-top:20px;"></div>
+      </div>
+
+      <div class="share-caption">第一階段結果</div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn-primary" id="to-stage2-btn">繼續測心動類型</button>
+    </div>
+  </section>
+
+  <section id="quiz2" class="stage" hidden>
+    <div class="rail">
+      <button class="back-btn" id="back-btn-2" type="button" aria-label="上一題">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="rail-track"><div class="rail-fill" id="rail-fill-2"></div></div>
+      <div class="rail-count" id="rail-count-2">1 / 10</div>
+    </div>
+    <h2 class="q-title" id="q-title-2"></h2>
+    <div class="options" id="q-options-2"></div>
+  </section>
+
+  <section id="final" class="stage" hidden>
+    <div class="eyebrow">測驗結果</div>
+
+    <div class="secondary-card" id="final-personality-card" style="margin-bottom:22px;"></div>
+    <div class="secondary-card" id="final-attraction-card" style="margin-bottom:22px;"></div>
+
+    <div class="attraction-card">
+      <h2>化學反應</h2>
+      <span class="chem-badge" id="chem-badge"></span>
+      <p id="chem-text"></p>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn-primary" id="retake-btn">重新測驗</button>
+    </div>
+
+    <div class="share-invite">
+      <p>歡迎留言分享你的測驗結果，也歡迎在這裡認識新朋友、找你的另一半！</p>
+      <button class="btn-ghost" id="copy-url-btn">複製網址</button>
+    </div>
+    <div class="copied" id="url-msg"></div>
+
+    <div class="support-card" id="support-card" hidden>
+      <p>如果喜歡這個測驗，想請我喝杯飲料也可以</p>
+      <a class="btn-ghost" id="support-link" href="#" target="_blank" rel="noopener">請我喝珍奶</a>
+    </div>
+  </section>
+
+  <footer>用你平常的直覺作答，結果純屬娛樂，認真你就輸了。</footer>
+</div>
+
+<script>
+(function(){
+
+var ICONS = {
+  sun:   '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v3M12 18.5v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2.5 12h3M18.5 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  iron:  '<path d="M20 14.6A8.4 8.4 0 1 1 9.4 4a7 7 0 0 0 10.6 10.6z"/>',
+  pup:   '<circle cx="12" cy="15.3" r="3.1"/><circle cx="6.6" cy="9.2" r="1.5"/><circle cx="10.2" cy="6.2" r="1.5"/><circle cx="13.8" cy="6.2" r="1.5"/><circle cx="17.4" cy="9.2" r="1.5"/>',
+  swan:  '<path d="M19 5c-5 0-13.5 2-13.5 13.5"/><path d="M19 5c0 5-2.5 13.5-13.5 13.5"/><path d="M4.2 19.8l3-3"/>',
+  bunny: '<path d="M9.3 11c-1.6-3-2.1-6.6-.6-8.1S12 3 12 7.2"/><path d="M14.7 11c1.6-3 2.1-6.6.6-8.1S12 3 12 7.2"/><circle cx="12" cy="14.8" r="5"/><circle cx="10" cy="14.3" r="0.65" fill="currentColor"/><circle cx="14" cy="14.3" r="0.65" fill="currentColor"/>',
+  free:  '<path d="M8 15a3 3 0 1 1 0-6c2 0 3 1.6 4 3s2 3 4 3a3 3 0 1 0 0-6c-2 0-3 1.6-4 3s-2 3-4 3z"/>',
+  boss:  '<path d="M5 18h14"/><path d="M6 18l-1-8 4.3 3.2L12 7l2.7 6.2L19 10l-1 8"/>',
+  frost: '<path d="M12 2.5v19M4 7l16 10M4 17L20 7"/>'
+};
+function iconSvg(type, size){
+  size = size || 16;
+  return '<svg viewBox="0 0 24 24" width="'+size+'" height="'+size+'" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+ICONS[type]+'</svg>';
+}
+
+var ORDER = ["sun","iron","pup","swan","bunny","free","boss","frost"];
+
+/* ---------- adaptive engine: nine trait dimensions ---------- */
+var DIMS = ["dom","care","surr","plat","attach","tension","bound","possess","vis"];
+var DIM_LABELS = {
+  dom:"主導感", care:"照顧傾向", surr:"交出控制", plat:"精神戀愛",
+  attach:"依戀模式", tension:"撩撥張力", bound:"邊界感", possess:"佔有慾", vis:"社交顯性度"
+};
+/* each type's baseline across the nine dimensions, 0-10 scale, 5 = neutral */
+var PROTO = {
+  sun:   [9,8,2,3,3,5,6,5,7],
+  iron:  [6,6,2,4,2,3,8,4,2],
+  pup:   [5,6,4,3,7,8,3,6,8],
+  swan:  [6,5,4,7,4,4,7,4,5],
+  bunny: [2,4,8,5,9,6,2,7,4],
+  free:  [5,5,5,5,5,5,5,3,6],
+  boss:  [10,5,1,3,4,8,2,9,8],
+  frost: [4,3,3,8,2,2,9,2,2]
+};
+var CENTERED = {};
+ORDER.forEach(function(t){ CENTERED[t] = PROTO[t].map(function(v){ return v-5; }); });
+function dot(a,b){ var s=0; for (var i=0;i<a.length;i++) s += a[i]*b[i]; return s; }
+function rankTypes(dims){
+  return ORDER.slice().sort(function(a,b){ return dot(dims,CENTERED[b]) - dot(dims,CENTERED[a]); });
+}
+var TOTAL_Q = 12;
+
+var BANK = [
+  { id:"q1", focus:["dom","surr"], opener:true, q: "不管是旅行行程、晚餐吃什麼，還是家裡的大小事，只要遇到需要做決定的時刻，你通常會：", opts: [
+    ["很快做出決定，然後說服大家一起走","sun"],
+    ["自己先想清楚，才把決定說出來","iron"],
+    ["想先問問大家的意見，一起討論","pup"],
+    ["把各種選項都想過一輪，再選一個","swan"],
+    ["比較依賴別人先做決定","bunny"],
+    ["看當下狀況，沒有固定的做法","free"],
+    ["直接拍板決定，不太留商量空間","boss"],
+    ["心裡早有答案，但懶得多解釋，直接照自己的意思做","frost"],
+  ]},
+  { id:"q2", focus:["dom","care"], opener:true, q: "好不容易約到喜歡的人出來，要規劃一場約會時，你通常會：", opts: [
+    ["提早排好行程，直接跟對方說「到時候這樣走」","sun"],
+    ["想法已經有了，但要過一段時間才會說出來","iron"],
+    ["傳好幾個連結和想法，想一起討論再決定","pup"],
+    ["選好餐廳、提前訂位，把細節都準備好","swan"],
+    ["問對方想去哪，自己先不主動提意見","bunny"],
+    ["看當下心情決定，常常前一天才確定","free"],
+    ["直接訂好、通知對方「這天空出來」，不太問意見","boss"],
+    ["隨口提一個地點，其餘細節懶得特別安排","frost"],
+  ]},
+  { id:"q3", focus:["vis","tension"], q: "一群朋友難得聚在一起吃飯聊天，在這樣的聚會裡，你通常會：", opts: [
+    ["負責安排時間地點，主動揪人出來","sun"],
+    ["話不多，但朋友有事情都會先想到你","iron"],
+    ["很熱絡地帶動氣氛，讓大家聊起來","pup"],
+    ["比較安靜觀察，想講話才開口","swan"],
+    ["心情起伏會直接表現在臉上","bunny"],
+    ["依場合調整自己，沒有固定狀態","free"],
+    ["自然成為全場焦點，說話很有份量","boss"],
+    ["全程話不多，但沒人敢隨便忽略你的存在","frost"],
+  ]},
+  { id:"q4", focus:["dom","bound"], q: "不管是工作專案還是朋友一起辦活動，只要是需要團隊合作的場合，你通常會扮演的角色是：", opts: [
+    ["主動帶頭，分配工作給大家","sun"],
+    ["把自己負責的部分做到最好，不太需要盯","iron"],
+    ["負責炒熱氣氛，讓團隊溝通比較順","pup"],
+    ["負責規劃流程，確保進度不出差錯","swan"],
+    ["比較習慣配合別人的安排","bunny"],
+    ["看專案需要，角色常常不一樣","free"],
+    ["直接接手主導，覺得交給別人不放心","boss"],
+    ["保持距離做自己該做的，懶得介入太多","frost"],
+  ]},
+  { id:"q5", focus:["surr","attach"], opener:true, q: "跟另一半因為一件小事起了爭執，冷靜下來之後，你通常會：", opts: [
+    ["先自己想清楚，整理好想法才開口","iron"],
+    ["很快傳訊息說明自己的想法，想趕快把話說開","pup"],
+    ["先開口，把話題往下一步推進","sun"],
+    ["比較少主動開口，等對方先聯絡","bunny"],
+    ["把問題一條一條列出來，討論怎麼處理","swan"],
+    ["看情況，有時候先開口，有時候等對方","free"],
+    ["很快主動找對方把話說清楚，但語氣帶點強勢","boss"],
+    ["情緒收得很快，表面像什麼都沒發生過","frost"],
+  ]},
+  { id:"q6", focus:["vis","bound"], q: "好不容易盼到一個沒有行程的週末，你比較常做的事是：", opts: [
+    ["跟朋友出去運動，或到處走走","sun"],
+    ["自己一個人在家休息","iron"],
+    ["跟喜歡的人待在一起，做什麼都可以","pup"],
+    ["去看展覽，或找一間店坐著","swan"],
+    ["在家看劇，不太想出門","bunny"],
+    ["看當天心情再決定","free"],
+    ["找人陪你做點刺激的事，閒不下來","boss"],
+    ["一個人待著就很自在，不特別需要安排","frost"],
+  ]},
+  { id:"q7", focus:["dom","surr"], q: "出門前打開衣櫃，面對一堆衣服要決定今天穿什麼，你平常的方式比較像：", opts: [
+    ["很快選好就出門，不會花太多時間","sun"],
+    ["固定幾套常穿的，不太花心思搭配","iron"],
+    ["喜歡嘗試新穿法，常常換風格","pup"],
+    ["會花時間搭配整體，講究細節","swan"],
+    ["常常猶豫很久，需要別人幫忙挑","bunny"],
+    ["看心情決定，沒有固定習慣","free"],
+    ["挑最能展現氣場的那一套","boss"],
+    ["怎麼簡單怎麼來，不想花心思在這種小事上","frost"],
+  ]},
+  { id:"q8", focus:["care","bound"], opener:true, q: "如果要你說出感情與生活裡比較在意的事，你會覺得比較重要的是：", opts: [
+    ["能保護、照顧在乎的人","sun"],
+    ["能保有自己的空間和步調","iron"],
+    ["身邊有熱絡、真誠的關係","pup"],
+    ["生活有品質、有規劃","swan"],
+    ["情感上被好好對待","bunny"],
+    ["不被框架綁住，能自由選擇","free"],
+    ["喜歡的東西一定要抓在自己手裡","boss"],
+    ["能保持一點距離感，不被情緒綁住","frost"],
+  ]},
+  { id:"q9", focus:["dom","surr"], q: "手上的工作突然卡關、一時找不到方向時，你通常會：", opts: [
+    ["直接去找人討論，當面解決","sun"],
+    ["自己先查資料、想辦法，解決不了才問人","iron"],
+    ["馬上在群組裡問，想趕快把問題解決掉","pup"],
+    ["整理好問題的來龍去脈，再找對的人問","swan"],
+    ["會有點緊張，需要時間才敢開口求助","bunny"],
+    ["看問題大小決定要不要找人幫忙","free"],
+    ["直接下指令要別人配合，很少懷疑自己的判斷","boss"],
+    ["自己默默處理，不太習慣開口求助","frost"],
+  ]},
+  { id:"q10", focus:["care","tension"], q: "深夜收到朋友傳來的長訊息，說她最近過得不太好，這時候你通常會：", opts: [
+    ["直接給建議，想幫忙解決問題","sun"],
+    ["安靜聽，不太會主動說太多話","iron"],
+    ["陪著一起罵、一起發洩情緒","pup"],
+    ["冷靜分析狀況，幫忙想解決辦法","swan"],
+    ["會被朋友的情緒影響，跟著難過","bunny"],
+    ["看朋友需要什麼，陪聊或給建議都可以","free"],
+    ["直接告訴她該怎麼做，語氣很篤定","boss"],
+    ["安靜聽完，但不太會多說安慰的話","frost"],
+  ]},
+  { id:"q11", focus:["tension","plat"], q: "喜歡上一個人、確定彼此心意的過程裡，在感情裡你比較常：", opts: [
+    ["先開口告白，或先牽對方的手","sun"],
+    ["比較少說，但會用行動讓對方知道","iron"],
+    ["比較常先說出「我喜歡你」這類的話","pup"],
+    ["等到適合的時機再表白","swan"],
+    ["用眼神或小動作暗示，不會直接說","bunny"],
+    ["看情況，沒有固定模式","free"],
+    ["很直接地說「你是我的人了」，不拖泥帶水","boss"],
+    ["心裡認定了，但表面還是一貫的淡定","frost"],
+  ]},
+  { id:"q12", focus:["surr","attach"], q: "工作死線逼近、生活一堆事情一次湧上來，遇到壓力很大的事情時，你通常會：", opts: [
+    ["先動手處理，邊做邊想辦法","sun"],
+    ["自己一個人消化，不太想說","iron"],
+    ["找人聊一聊，說出來比較舒服","pup"],
+    ["列清單、想計畫，讓自己有掌控感","swan"],
+    ["情緒會先受影響，需要一點時間緩一緩","bunny"],
+    ["看情況應對，沒有固定的處理方式","free"],
+    ["直接下令分配事情，逼自己和身邊人一起衝","boss"],
+    ["一個人默默扛著，不太想讓人看到自己的狀態","frost"],
+  ]},
+  { id:"q13", focus:["vis","possess"], q: "跟另一半一起出現在朋友聚會上，在公開場合表達喜歡這件事，你通常會：", opts: [
+    ["很自然地牽手、靠近，不會刻意隱藏","sun"],
+    ["不太會有太明顯的舉動，但會默默做些貼心小事","iron"],
+    ["很直接地放閃，大方介紹「這是我女朋友」","pup"],
+    ["保持得體的距離感，親密感留到兩人獨處時","swan"],
+    ["會害羞，但很享受被牽著、被介紹的感覺","bunny"],
+    ["看場合和心情，沒有固定的尺度","free"],
+    ["很自然地把對方帶在身邊，像在宣示主權","boss"],
+    ["幾乎沒有太明顯的互動，但眼神藏不住在意","frost"],
+  ]},
+  { id:"q14", focus:["tension","vis"], q: "滑手機滑到一半，看到喜歡的人發了一則限時動態，是她隨手拍的日常照片，你通常會：", opts: [
+    ["直接留言或私訊稱讚","sun"],
+    ["按個愛心，但不會特別留言","iron"],
+    ["馬上截圖傳過去說「超好看」","pup"],
+    ["會欣賞，但傾向當面講比較自然","swan"],
+    ["會一直點開重複看，但不太敢主動留言","bunny"],
+    ["看心情，有時候會回應，有時候不會","free"],
+    ["直接留言，語氣帶點調侃和佔有慾","boss"],
+    ["看過就好，不會特別按讚或留言","frost"],
+  ]},
+  { id:"q15", focus:["attach","bound"], q: "原本說好的約會，另一半臨時傳訊息說有事、計畫得取消，這時候你通常會：", opts: [
+    ["直接問清楚原因，再重新安排時間","sun"],
+    ["心裡有點在意，但不會表現出來","iron"],
+    ["馬上傳訊息問「怎麼了？還好嗎？」","pup"],
+    ["理解現實狀況，但會希望對方提前說一聲","swan"],
+    ["會有點小失落，需要一點時間調適心情","bunny"],
+    ["沒差，剛好自己也有別的安排","free"],
+    ["直接要求對方給個清楚交代","boss"],
+    ["表面無所謂，心裡其實有點在意但不會說","frost"],
+  ]},
+  { id:"q16", focus:["bound","attach"], opener:true, q: "如果可以自己決定感情裡的生活方式，你理想中「屬於兩人的空間」比較像：", opts: [
+    ["兩人世界，但也歡迎朋友偶爾加入","sun"],
+    ["各自有獨立的角落，互不打擾","iron"],
+    ["幾乎時時刻刻黏在一起才安心","pup"],
+    ["固定的儀式感時間，其餘時間各自生活","swan"],
+    ["很需要常常確認彼此都在，才有安全感","bunny"],
+    ["沒有固定模式，走到哪算到哪","free"],
+    ["以你為主導安排的兩人世界，妳說了算","boss"],
+    ["各自保有大片的獨處空間，相處時才靠近","frost"],
+  ]},
+  { id:"q17", focus:["possess","bound"], q: "滑到另一半的聊天視窗，發現她最近跟某個人聊得特別熱絡、訊息來來回回不少則，你通常會：", opts: [
+    ["心裡會在意，但會用行動表現存在感","sun"],
+    ["表面不動聲色，心裡默默記下","iron"],
+    ["直接說出自己的不開心","pup"],
+    ["先觀察情況，覺得不對勁才開口","swan"],
+    ["會明顯不開心，需要對方主動安撫","bunny"],
+    ["相信對方，不太會因此多想","free"],
+    ["直接開口劃清界線，讓對方知道你在意","boss"],
+    ["表面完全看不出情緒，但會默默疏遠一點","frost"],
+  ]},
+  { id:"q18", focus:["care","tension"], q: "今天發生了一件讓你很想立刻告訴另一半的事，不管是開心還是煩心的，你通常會：", opts: [
+    ["直接打電話，想趕快分享","sun"],
+    ["等見面的時候再慢慢說","iron"],
+    ["馬上傳一長串訊息轟炸對方","pup"],
+    ["整理好重點，找適合的時間好好聊","swan"],
+    ["會想分享，但有點猶豫要不要先傳訊息","bunny"],
+    ["看心情，有時想分享有時只想自己消化","free"],
+    ["直接打電話講，等不及想讓對方知道","boss"],
+    ["通常不會特別主動說，等對方問起才提","frost"],
+  ]},
+  { id:"q19", focus:["plat","dom"], q: "偶爾靜下來想到這段感情的「未來」，不管是同居、存錢還是更長遠的規劃，你通常會：", opts: [
+    ["很有行動力地朝目標前進，邊走邊調整","sun"],
+    ["心裡有規劃，但不太會說出口","iron"],
+    ["常常興奮地跟另一半討論各種可能","pup"],
+    ["喜歡提前規劃，一步一步照計畫走","swan"],
+    ["會想很多，也會擔心變數","bunny"],
+    ["走一步算一步，不喜歡被計畫綁住","free"],
+    ["很有主見地規劃好方向，帶著對方一起走","boss"],
+    ["心裡有打算，但不太會主動拿出來討論","frost"],
+  ]},
+  { id:"q20", focus:["care","vis"], q: "另一半努力了很久的一件事終於有了結果，像是升遷、考試通過，或完成一個重要目標時，你通常會：", opts: [
+    ["第一時間大方稱讚，幫忙慶祝","sun"],
+    ["默默感到驕傲，用實際行動表示支持","iron"],
+    ["超興奮地到處跟朋友炫耀「這是我女朋友」","pup"],
+    ["由衷欣賞，會用有質感的方式慶祝","swan"],
+    ["很替對方開心，也會小小崇拜對方","bunny"],
+    ["替對方高興，但不會特別大張旗鼓","free"],
+    ["大方宣布這是「我罩的人」，驕傲又霸氣","boss"],
+    ["心裡很驕傲，但表現得很平淡","frost"],
+  ]},
+];
+
+var RESULTS = {
+  sun: {
+    name: "太陽系",
+    tagline: "全場的靠山，走到哪都自帶安全感",
+    desc: "你是那種一進到關係裡就會自動扛起責任的人——行程你來排、重的東西你來拿，對方不開心你會第一個注意到。朋友都說跟你在一起很放心，因為你天生就是會照顧人的類型。你喜歡主動、喜歡掌握節奏，但也別忘了偶爾讓自己被照顧一下，你值得。",
+    traits: "果斷、主動、重承諾",
+    style: "俐落實穿，不喜歡太花俏的款式"
+  },
+  iron: {
+    name: "安靜系",
+    tagline: "外冷內熱，話少但每個行動都是愛",
+    desc: "你不太擅長說甜言蜜語，但你會記得對方的每個小習慣，默默把對方的喜好放在心上。熟悉你的人都知道，你的高冷只是保護色，一旦打開心房，你會是最死忠、最可靠的那個人。你的愛不喧嘩，卻很扎實。",
+    traits: "冷靜、獨立、重細節",
+    style: "偏好簡單耐看的單品，不太追流行"
+  },
+  pup: {
+    name: "奶狗系",
+    tagline: "精力無限的開心果，愛就要大聲說出來",
+    desc: "你是關係裡的氣氛擔當，喜歡黏著喜歡的人，情感表達直接又熱烈，想到什麼就說什麼。你的真誠和熱情很有感染力，讓人很難不被你圈粉。偶爾會有點粗線條，但正是這份純粹讓人安心。",
+    traits: "熱情、直率、精力旺盛",
+    style: "舒適自在最重要，活動方便優先"
+  },
+  swan: {
+    name: "優雅系",
+    tagline: "氣場與質感兼具的生活掌舵者",
+    desc: "你對生活很有自己的品味與節奏，不管是約會地點還是日常小細節，你都希望是有質感的。你不吵不鬧，但很清楚自己要什麼，也很懂得照顧兩個人的生活步調。跟你在一起，日子會過得很有儀式感。",
+    traits: "講究、從容、有主見",
+    style: "在意質感和整體搭配，偏好有品味的單品"
+  },
+  bunny: {
+    name: "軟萌系",
+    tagline: "情緒最真實、最讓人想保護的那一種",
+    desc: "你很容易因為一點小事就臉紅心跳，喜歡就是喜歡，藏不住也不想藏。你的黏人不是依賴，是因為你很享受被愛、也很願意付出愛的感覺。你的可愛是武器，連吵架都讓人捨不得凶你。",
+    traits: "敏感、真誠、情緒直接",
+    style: "喜歡柔和舒服的款式，重視穿起來的心情"
+  },
+  free: {
+    name: "自由系",
+    tagline: "不被標籤定義，相處最自在的那一種",
+    desc: "你不喜歡被貼標籤，今天可以很man、明天也可以很少女，全看當下的心情和對象。你最大的魅力就是彈性與自在——跟你在一起不需要演誰，做自己就好。你讓「T」跟「P」這種分類在你身上失去意義。",
+    traits: "彈性、隨性、不受拘束",
+    style: "風格常常變化，看心情決定今天想當誰"
+  },
+  boss: {
+    name: "霸道系",
+    tagline: "氣場全開，一開口就讓人移不開視線",
+    desc: "你骨子裡就是喜歡掌控全場的那種人——想要的東西不太會拐彎抹角，喜歡的人也會直接讓對方知道「妳是我的」。你的強勢不是壓迫，而是一種讓人安心的篤定感，跟你在一起很少有曖昧不明的時刻，因為你從不掩飾自己的在乎。偶爾也要記得，再喜歡一個人，也要留一點空間讓她喘口氣。",
+    traits: "強勢、果決、佔有慾強",
+    style: "剪裁俐落、氣場十足的單品，走到哪都很有存在感"
+  },
+  frost: {
+    name: "清冷系",
+    tagline: "淡淡的、靠得越近越讓人想靠近",
+    desc: "你天生自帶一種疏離感，不吵不鬧，情緒很少寫在臉上，讓人忍不住想多了解你一點。你不是不在乎，只是習慣把心事放在很深的地方，比起熱烈的表白，你更相信細水長流的陪伴。熟悉你的人才知道，你的冷淡底下，藏著很專一的深情，只是你很少說出口。",
+    traits: "疏離、神秘、重精神契合",
+    style: "極簡、留白感十足的穿搭，不靠配件說話"
+  }
+};
+
+/* secondary-flavor sentences: appended regardless of which primary they
+   pair with, so primary x secondary = 6 x 5 = 30 distinct combined reads */
+var FLAVOR = {
+  sun:   "而且骨子裡藏著不小的行動力，想到什麼就衝去做，很少讓念頭停在原地。",
+  iron:  "但你心裡其實藏著一點安靜與獨立，不太喜歡把情緒攤在陽光下給人看。",
+  pup:   "也藏著一點黏人的奶狗魂，熟了之後特別愛撒嬌、愛說心裡話。",
+  swan:  "同時對生活品質也有堅持，小細節馬虎不得，這點連自己都沒發現。",
+  bunny: "心裡也住著一個容易害羞臉紅的小朋友，只是不常被看見。",
+  free:  "其實沒那麼喜歡被定義，偶爾也想自由切換，不想永遠照同一套劇本走。",
+  boss:  "而且內心深處藏著強烈的主導慾，喜歡的東西就會主動出手爭取，不太習慣被動等待。",
+  frost: "但也藏著一點疏離與神秘，情緒不輕易外露，熟了才看得到真實的一面。"
+};
+var PURE_LINE = "這次你的選擇相當集中，幾乎都指向同一種特質——你是很純粹的那一型。";
+
+/* ---------- stage 2 question bank: who pulls you in (used for the real,
+   measured attraction result — replaces any hard-coded "if you're X you're
+   drawn to Y" guess) ---------- */
+var BANK2 = [
+  { q: "什麼樣的另一半最讓妳有安全感？", opts: [
+    ["會主動安排好一切、讓妳不用煩惱的人","sun"],
+    ["話不多但默默記得妳每個習慣的人","iron"],
+    ["熱情直接、想到什麼就對妳說的人","pup"],
+    ["從容優雅、生活很有品味的人","swan"],
+    ["情緒真實、會讓妳想保護的人","bunny"],
+    ["自由自在、不被框架綁住的人","free"],
+    ["強勢篤定、讓妳感覺被牢牢守住的人","boss"],
+    ["沉穩疏離、讓妳想靠近卻又猜不透的人","frost"],
+  ]},
+  { q: "約會時，妳最容易被哪種另一半的狀態吸引？", opts: [
+    ["行程都安排好、帶著妳走的人","sun"],
+    ["安靜陪著妳，不需要太多言語的人","iron"],
+    ["整場氣氛都被炒熱、很有活力的人","pup"],
+    ["挑選有質感餐廳、很講究細節的人","swan"],
+    ["害羞臉紅、反應很真實可愛的人","bunny"],
+    ["隨性自在、怎麼樣都好的人","free"],
+    ["主導全場、帶著強烈氣場的人","boss"],
+    ["安靜疏離、讓人忍不住多看兩眼的人","frost"],
+  ]},
+  { q: "吵架、意見不合的時候，妳會被哪種另一半的反應打動？", opts: [
+    ["直接開口，把問題解決掉的人","sun"],
+    ["先冷靜下來，再默默用行動表示和好的人","iron"],
+    ["很快傳訊息說清楚，想趕快和好的人","pup"],
+    ["列出問題、理性討論的人","swan"],
+    ["情緒上來但很快又黏回來的人","bunny"],
+    ["看情況彈性處理，不堅持一定要怎樣的人","free"],
+    ["直接把話說死、態度強硬但很有擔當的人","boss"],
+    ["冷靜到有點抽離、但事後默默彌補的人","frost"],
+  ]},
+  { q: "在朋友聚會或公開場合，妳會希望另一半是哪種樣子？", opts: [
+    ["大方介紹妳、放閃不手軟的人","sun"],
+    ["話不多，但朋友都知道她很罩妳的人","iron"],
+    ["熱情地跟大家打成一片的人","pup"],
+    ["得體、有自己分寸的人","swan"],
+    ["會害羞但藏不住開心的人","bunny"],
+    ["看場合調整，很自在的人","free"],
+    ["氣場全開、讓人一眼就認出她是主導者的人","boss"],
+    ["話不多、但氣質讓人移不開視線的人","frost"],
+  ]},
+  { q: "哪一種另一半，最容易讓妳想主動靠近、想認識更多？", opts: [
+    ["氣場強、讓妳覺得有依靠的人","sun"],
+    ["外冷內熱、需要花時間了解的人","iron"],
+    ["一見面就很熱絡、讓妳沒有壓力的人","pup"],
+    ["氣質出眾、相處起來很舒服的人","swan"],
+    ["情緒直接、讓妳很想照顧她的人","bunny"],
+    ["很難被定義、讓妳很好奇的人","free"],
+    ["強勢又有魅力、讓人想被征服的人","boss"],
+    ["疏離神秘、讓人很想了解更多的人","frost"],
+  ]},
+  { q: "妳比較容易因為另一半的哪個舉動而心動？", opts: [
+    ["幫妳扛下麻煩事，說「交給我」","sun"],
+    ["默默記得妳隨口說過的小事","iron"],
+    ["傳一長串訊息說想妳","pup"],
+    ["精心安排一個有儀式感的驚喜","swan"],
+    ["因為妳的一句話臉紅","bunny"],
+    ["在妳意想不到的時候展現不同的一面","free"],
+    ["直接霸氣宣告「妳是我的」","boss"],
+    ["一個淡淡的眼神，就讓人心跳漏拍","frost"],
+  ]},
+  { q: "面對感情裡的未來規劃，妳希望另一半是哪種人？", opts: [
+    ["很有行動力、說到做到的人","sun"],
+    ["心裡有規劃、穩穩地往前走的人","iron"],
+    ["興奮地跟妳討論各種可能性的人","pup"],
+    ["喜歡提前規劃、一步步來的人","swan"],
+    ["會擔心變數、但很願意跟妳一起面對的人","bunny"],
+    ["走一步算一步、不喜歡被計畫綁住的人","free"],
+    ["很有主導權、說了算又讓人安心的人","boss"],
+    ["獨立自主、不依賴妳也能把生活過好的人","frost"],
+  ]},
+  { q: "另一半的穿衣風格，妳比較容易被哪一種吸引？", opts: [
+    ["俐落乾淨、不花俏的打扮","sun"],
+    ["簡單耐看、不特別追流行的打扮","iron"],
+    ["自由多變、常常嘗試新風格的打扮","pup"],
+    ["講究質感、整體搭配很到位的打扮","swan"],
+    ["舒服柔和、讓人想靠近的打扮","bunny"],
+    ["風格多變、看心情決定的打扮","free"],
+    ["氣場強烈、一眼就很有存在感的打扮","boss"],
+    ["極簡低調、留白感十足的打扮","frost"],
+  ]},
+  { q: "感情要往前走一步時，妳容易被哪種「主動方式」吸引？", opts: [
+    ["先告白、先牽手的直接行動","sun"],
+    ["不說破、但用行動證明的方式","iron"],
+    ["直接說出「我喜歡妳」的坦率","pup"],
+    ["等適合時機、穩穩表白的方式","swan"],
+    ["用眼神和小動作暗示的含蓄","bunny"],
+    ["沒有固定模式、隨緣發展的方式","free"],
+    ["強勢直接、幾乎不給拒絕空間的告白","boss"],
+    ["欲言又止、靠氛圍傳遞心意的曖昧","frost"],
+  ]},
+  { q: "壓力大、心情低落的時候，妳希望另一半怎麼陪妳？", opts: [
+    ["直接幫妳處理，動手解決問題","sun"],
+    ["安靜地在旁邊陪著，不多問","iron"],
+    ["主動找妳聊聊、陪妳說出來","pup"],
+    ["幫妳列清單、一起想辦法","swan"],
+    ["會被妳的情緒感染、跟妳一起難過又一起走出來","bunny"],
+    ["看情況陪伴，沒有固定方式","free"],
+    ["直接接手幫妳處理、不由分說地罩著妳","boss"],
+    ["安靜留一點空間給妳，不多問也不打擾","frost"],
+  ]},
+];
+
+function chemistryText(pType, aType){
+  var p = RESULTS[pType], a = RESULTS[aType];
+  if (pType === aType){
+    return "妳是『" + p.name + "」，而讓妳心動的也是『" + a.name + "』這一型——妳們很容易一拍即合，像照鏡子一樣懂對方在想什麼，相處起來特別不費力。只是太像的兩個人，偶爾也要提醒自己留一點空間給彼此，別把對方的習慣都當成理所當然。";
+  }
+  var pDom = PROTO[pType][0], aDom = PROTO[aType][0];
+  if (Math.abs(pDom - aDom) >= 3){
+    return "妳是『" + p.name + "』，容易被『" + a.name + "』吸引——一個習慣往前帶、一個習慣順著走，妳們剛好能補上彼此的節奏。這種一主動一安靜的組合，相處起來意外地平衡，只要記得偶爾交換一下角色，感情會更有彈性。";
+  }
+  return "妳是『" + p.name + "』，容易被『" + a.name + "』吸引——" + p.tagline + "的妳，遇上" + a.tagline + "的對方，兩人調性雖然不完全一樣，卻能在彼此身上看見自己沒有的那一面。這種若即若離的吸引力，常常是感情裡最耐人尋味的部分。";
+}
+
+/* a light, qualitative companion tag for the chemistry text — not a
+   precision "compatibility score" (the underlying read only has three
+   broad shapes), just a short label so the result has a little visual
+   anchor without pretending to more precision than the model has. */
+function chemistryLabel(pType, aType){
+  if (pType === aType) return "同頻共振";
+  var pDom = PROTO[pType][0], aDom = PROTO[aType][0];
+  if (Math.abs(pDom - aDom) >= 3) return "互補吸引";
+  return "若即若離";
+}
+
+/* set this to a real donation link (Ko-fi / Buy Me a Coffee / PayPal.me /
+   收款連結…) to show the support button; leave empty to keep it hidden */
+var SUPPORT_URL = "https://houo.bobaboba.me";
+(function(){
+  if (SUPPORT_URL){
+    document.getElementById('support-link').href = SUPPORT_URL;
+    document.getElementById('support-card').hidden = false;
+  }
+})();
+
+/* state.asked: question objects shown so far, in order.
+   state.picks: chosen type per asked question (same length as answered-so-far).
+   state.deltas: the nine-dimension delta each answer contributed (same length as picks).
+   state.pos: index of the question currently on screen. */
+var state = { asked: [], picks: [], deltas: [], pos: 0, phase: 'personality' };
+
+/* an option's effect on the nine dimensions isn't just "which type it points
+   to" — it's weighted by what the question is actually probing (q.focus).
+   Full weight on the question's own focus dimensions, a light touch
+   elsewhere, so different questions carry genuinely different information
+   and the adaptive picker below has something real to discriminate on. */
+function optionDelta(type, focus){
+  return DIMS.map(function(d, i){
+    return focus.indexOf(d) >= 0 ? CENTERED[type][i] : CENTERED[type][i] * 0.25;
+  });
+}
+
+function sumDeltas(deltas){
+  var dims = DIMS.map(function(){ return 0; });
+  deltas.forEach(function(delta){
+    delta.forEach(function(v, i){ dims[i] += v; });
+  });
+  return dims;
+}
+
+function pickOpener(remaining){
+  var openers = remaining.filter(function(q){ return q.opener; });
+  var pool = openers.length ? openers : remaining;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+/* choose the next question: for the first couple of picks, start broad with
+   a random opener so repeat plays feel different; after that, pick whichever
+   unused question best separates the two currently-leading types, so the
+   question path adapts to how the answers are trending. */
+function pickNextQuestion(){
+  var askedIds = state.asked.map(function(q){ return q.id; });
+  var remaining = BANK.filter(function(q){ return askedIds.indexOf(q.id) < 0; });
+  if (!remaining.length) return null;
+  if (state.picks.length < 2){
+    return pickOpener(remaining);
+  }
+  var dims = sumDeltas(state.deltas);
+  var ranked = rankTypes(dims);
+  var diff = CENTERED[ranked[0]].map(function(v, i){ return v - CENTERED[ranked[1]][i]; });
+  var best = null, bestSpread = -Infinity;
+  remaining.forEach(function(q){
+    var dots = q.opts.map(function(o){ return dot(optionDelta(o[1], q.focus), diff); });
+    var spread = Math.max.apply(null, dots) - Math.min.apply(null, dots);
+    if (spread > bestSpread){ bestSpread = spread; best = q; }
+  });
+  return best || remaining[0];
+}
+
+var startEl = document.getElementById('start');
+var quizEl = document.getElementById('quiz');
+var resultEl = document.getElementById('result');
+var quiz2El = document.getElementById('quiz2');
+var finalEl = document.getElementById('final');
+var stage1Result = null;
+var state2 = { i: 0, picks: [] };
+
+/* start chips: one per base type, with icon + name + T/P/H tag */
+(function(){
+  var wrap = document.getElementById('type-chips');
+  ORDER.forEach(function(k){
+    var el = document.createElement('span');
+    el.className = 'type-chip';
+    el.innerHTML = iconSvg(k, 14) + '<span>' + RESULTS[k].name + '</span>';
+    wrap.appendChild(el);
+  });
+})();
+
+document.getElementById('start-btn').addEventListener('click', function(){
+  startEl.hidden = true;
+  quizEl.hidden = false;
+  state = { asked: [pickOpener(BANK)], picks: [], deltas: [], pos: 0, phase: 'personality' };
+  tpState = { i: 0, answers: [] };
+  renderQuestion();
+});
+
+document.getElementById('back-btn').addEventListener('click', function(){
+  if (state.phase === 'tph'){
+    if (tpState.i === 0){
+      state.phase = 'personality';
+      renderQuestion();
+      return;
+    }
+    tpState.i -= 1;
+    renderQuestion();
+    return;
+  }
+  if (state.pos === 0){
+    quizEl.hidden = true;
+    startEl.hidden = false;
+    return;
+  }
+  state.pos -= 1;
+  renderQuestion();
+});
+
+function renderQuestion(){
+  if (state.phase === 'tph'){
+    renderTPStep();
+    return;
+  }
+  var q = state.asked[state.pos];
+  document.getElementById('rail-count').textContent = (state.pos+1) + ' / ' + TOTAL_STAGE1;
+  document.getElementById('rail-fill').style.width = (state.pos/TOTAL_STAGE1*100) + '%';
+  document.getElementById('q-title').textContent = q.q;
+  var optsEl = document.getElementById('q-options');
+  optsEl.innerHTML = '';
+  var prevAnswer = state.picks[state.pos];
+  q.opts.forEach(function(opt){
+    var btn = document.createElement('button');
+    btn.className = 'option' + (prevAnswer === opt[1] ? ' picked' : '');
+    btn.type = 'button';
+    btn.textContent = opt[0];
+    btn.addEventListener('click', function(){ pick(opt[1], btn); });
+    optsEl.appendChild(btn);
+  });
+  quizEl.classList.remove('stage');
+  void quizEl.offsetWidth;
+  quizEl.classList.add('stage');
+}
+
+function pick(type, btn){
+  var all = document.querySelectorAll('#q-options .option');
+  all.forEach(function(b){ b.disabled = true; b.classList.remove('picked'); });
+  btn.classList.add('picked');
+
+  /* record this answer at the current position; if we're revisiting an
+     earlier question (via back-btn) and the answer changed, drop whatever
+     was adaptively chosen after it, since that path is no longer valid */
+  var q = state.asked[state.pos];
+  state.picks[state.pos] = type;
+  state.deltas[state.pos] = optionDelta(type, q.focus);
+  state.picks.length = state.pos + 1;
+  state.deltas.length = state.pos + 1;
+  state.asked.length = state.pos + 1;
+
+  setTimeout(function(){
+    if (state.picks.length >= TOTAL_Q){
+      /* personality phase done — the quiz continues straight into the 8
+         T / P questions before showing any result, so the two reads
+         (type + spectrum) land on the same result screen together */
+      state.phase = 'tph';
+      tpState = { i: 0, answers: [] };
+      renderQuestion();
+      return;
+    }
+    var next = pickNextQuestion();
+    state.asked.push(next);
+    state.pos += 1;
+    renderQuestion();
+  }, 220);
+}
+
+/* ---------- T / P step: 8 fixed questions, answered right after the 12
+   adaptive personality questions and before any result is shown. Scored
+   on a plain -2..+2 scale and reported only as a percentage spectrum on
+   the result screen — never as a declarative "you are T" label. ---------- */
+function renderTPStep(){
+  var q = TP_BANK[tpState.i];
+  var overall = TOTAL_Q + tpState.i;
+  document.getElementById('rail-count').textContent = (overall+1) + ' / ' + TOTAL_STAGE1;
+  document.getElementById('rail-fill').style.width = (overall/TOTAL_STAGE1*100) + '%';
+  document.getElementById('q-title').textContent = q.q;
+  var optsEl = document.getElementById('q-options');
+  optsEl.innerHTML = '';
+  var prev = tpState.answers[tpState.i];
+  q.opts.forEach(function(opt){
+    var btn = document.createElement('button');
+    btn.className = 'option' + (prev === opt[1] ? ' picked' : '');
+    btn.type = 'button';
+    btn.textContent = opt[0];
+    btn.addEventListener('click', function(){ pickTP(opt[1], btn); });
+    optsEl.appendChild(btn);
+  });
+  quizEl.classList.remove('stage');
+  void quizEl.offsetWidth;
+  quizEl.classList.add('stage');
+}
+
+function pickTP(value, btn){
+  var all = document.querySelectorAll('#q-options .option');
+  all.forEach(function(b){ b.disabled = true; b.classList.remove('picked'); });
+  btn.classList.add('picked');
+  tpState.answers[tpState.i] = value;
+  setTimeout(function(){
+    if (tpState.i + 1 >= TP_BANK.length){
+      showResult();
+      return;
+    }
+    tpState.i += 1;
+    renderQuestion();
+  }, 220);
+}
+
+/* the middle band of the spectrum (40%-60%) is where neither pole stands
+   out — that's the "不分" zone. It's not a separate category computed on
+   its own axis, just the center of the same T/P line, so it's surfaced
+   as a plain description rather than a declared label. */
+var MID_ZONE_LOW = 40, MID_ZONE_HIGH = 60;
+
+function tpSplit(){
+  var raw = tpState.answers.reduce(function(a,b){ return a+b; }, 0);
+  var tPct = Math.round(((raw + 16) / 32) * 100);
+  tPct = Math.max(0, Math.min(100, tPct));
+  return { tPct: tPct, pPct: 100 - tPct };
+}
+
+/* a short "leaning" word for the primary-type badge row — still phrased as
+   a lean ("偏"), not a flat label like the badge would be if it just said
+   "T" or "P", so it stays consistent with "this isn't a conclusion". */
+function tpLeanLabel(){
+  var s = tpSplit();
+  if (s.tPct >= MID_ZONE_LOW && s.tPct <= MID_ZONE_HIGH) return '偏不分';
+  return s.tPct > s.pPct ? '偏 T' : '偏 P';
+}
+
+function renderTPBar(){
+  var s = tpSplit();
+  var tPct = s.tPct, pPct = s.pPct;
+  var inMidZone = tPct >= MID_ZONE_LOW && tPct <= MID_ZONE_HIGH;
+  var midNote = inMidZone
+    ? '<p style="font-size:14px;color:var(--ink-soft);margin:14px 0 0;line-height:1.65;">這次的回答落在光譜中間（40%–60% 之間），比較靠近「不分」的位置，一樣不是定論，純粹描述這次的作答落點。</p>'
+    : '';
+  document.getElementById('tp-bar-wrap').innerHTML =
+    '<div style="display:flex;justify-content:space-between;font-weight:800;font-size:17px;margin-bottom:10px;">' +
+      '<span>P ' + pPct + '%</span><span>T ' + tPct + '%</span>' +
+    '</div>' +
+    '<div style="position:relative;height:16px;border-radius:999px;background:var(--surface-2);overflow:hidden;display:flex;">' +
+      '<div style="width:' + pPct + '%;background:var(--accent-2);"></div>' +
+      '<div style="width:' + tPct + '%;background:var(--accent);"></div>' +
+    '</div>' +
+    midNote;
+}
+
+function showResult(){
+  quizEl.hidden = true;
+  resultEl.hidden = false;
+  resultEl.classList.remove('stage');
+  void resultEl.offsetWidth;
+  resultEl.classList.add('stage');
+
+  var dims = sumDeltas(state.deltas);
+  var ranked = rankTypes(dims);
+  var primary = ranked[0];
+  var secondary = ranked[1];
+  var r = RESULTS[primary];
+  var hasSecondary = dot(dims, CENTERED[secondary]) > 0;
+
+  var badgesEl = document.getElementById('r-badges');
+  badgesEl.innerHTML =
+    '<span class="badge primary">' + iconSvg(primary,15) + '<span>主型・' + r.name + '</span></span>' +
+    (hasSecondary
+      ? '<span class="badge secondary">' + iconSvg(secondary,15) + '<span>副型・' + RESULTS[secondary].name + '</span></span>'
+      : '') +
+    '<span class="badge-tp">' + tpLeanLabel() + '</span>';
+
+  document.getElementById('hero-icon').innerHTML = '<span class="hero-icon-circle">' + iconSvg(primary,34) + '</span>';
+  document.getElementById('r-name').textContent = r.name;
+  document.getElementById('r-tagline').textContent = r.tagline;
+  document.getElementById('r-traits').innerHTML =
+    '<div class="trait-row"><span class="trait-label">性格</span><span class="trait-value">' + r.traits + '</span></div>' +
+    '<div class="trait-row"><span class="trait-label">風格</span><span class="trait-value">' + r.style + '</span></div>';
+  document.getElementById('r-desc').textContent = r.desc;
+  document.getElementById('r-flavor').textContent = hasSecondary ? FLAVOR[secondary] : PURE_LINE;
+  stage1Result = { primary: primary, secondary: secondary, hasSecondary: hasSecondary };
+
+  var secCard = document.getElementById('secondary-card');
+  if (hasSecondary){
+    var rs = RESULTS[secondary];
+    document.getElementById('sec-icon').innerHTML = iconSvg(secondary,22);
+    document.getElementById('sec-name').textContent = rs.name;
+    document.getElementById('sec-tagline').textContent = rs.tagline;
+    document.getElementById('sec-desc').textContent = rs.desc;
+    document.getElementById('sec-meta').textContent = '性格：' + rs.traits + '　風格：' + rs.style;
+    secCard.hidden = false;
+  } else {
+    secCard.hidden = true;
+  }
+
+  renderTPBar();
+}
+
+document.getElementById('to-stage2-btn').addEventListener('click', function(){
+  state2 = { i: 0, picks: [] };
+  resultEl.hidden = true;
+  quiz2El.hidden = false;
+  renderQ2();
+});
+
+document.getElementById('back-btn-2').addEventListener('click', function(){
+  if (state2.i === 0){
+    quiz2El.hidden = true;
+    resultEl.hidden = false;
+    return;
+  }
+  state2.i -= 1;
+  renderQ2();
+});
+
+function renderQ2(){
+  var q = BANK2[state2.i];
+  document.getElementById('rail-count-2').textContent = (state2.i+1) + ' / ' + BANK2.length;
+  document.getElementById('rail-fill-2').style.width = (state2.i/BANK2.length*100) + '%';
+  document.getElementById('q-title-2').textContent = q.q;
+  var optsEl = document.getElementById('q-options-2');
+  optsEl.innerHTML = '';
+  var prev = state2.picks[state2.i];
+  q.opts.forEach(function(opt){
+    var btn = document.createElement('button');
+    btn.className = 'option' + (prev === opt[1] ? ' picked' : '');
+    btn.type = 'button';
+    btn.textContent = opt[0];
+    btn.addEventListener('click', function(){ pick2(opt[1], btn); });
+    optsEl.appendChild(btn);
+  });
+  quiz2El.classList.remove('stage');
+  void quiz2El.offsetWidth;
+  quiz2El.classList.add('stage');
+}
+
+function pick2(type, btn){
+  var all = document.querySelectorAll('#q-options-2 .option');
+  all.forEach(function(b){ b.disabled = true; b.classList.remove('picked'); });
+  btn.classList.add('picked');
+  state2.picks[state2.i] = type;
+  setTimeout(function(){
+    if (state2.i + 1 >= BANK2.length){
+      finishStage2();
+      return;
+    }
+    state2.i += 1;
+    renderQ2();
+  }, 220);
+}
+
+function finishStage2(){
+  var counts = {};
+  ORDER.forEach(function(t){ counts[t] = 0; });
+  state2.picks.forEach(function(t){ counts[t] += 1; });
+  var aType = ORDER.slice().sort(function(a,b){ return counts[b]-counts[a]; })[0];
+
+  quiz2El.hidden = true;
+  finalEl.hidden = false;
+  finalEl.classList.remove('stage');
+  void finalEl.offsetWidth;
+  finalEl.classList.add('stage');
+
+  var p = RESULTS[stage1Result.primary];
+  var a = RESULTS[aType];
+
+  document.getElementById('final-personality-card').innerHTML =
+    '<h2 style="font-family:var(--body);font-weight:700;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 14px;">妳的人格類型</h2>' +
+    '<div class="secondary-head">' +
+      '<span class="mini-icon">' + iconSvg(stage1Result.primary,22) + '</span>' +
+      '<div><h3>' + p.name + '</h3><p class="sec-tagline">' + p.tagline + '</p></div>' +
+    '</div>' +
+    '<p style="font-size:15.5px;line-height:1.8;color:var(--ink-soft);margin:12px 0 0;">' + p.desc + '</p>';
+
+  document.getElementById('final-attraction-card').innerHTML =
+    '<h2 style="font-family:var(--body);font-weight:700;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 14px;">妳容易被吸引的類型</h2>' +
+    '<div class="secondary-head">' +
+      '<span class="mini-icon">' + iconSvg(aType,22) + '</span>' +
+      '<div><h3>' + a.name + '</h3><p class="sec-tagline">' + a.tagline + '</p></div>' +
+    '</div>' +
+    '<p style="font-size:15.5px;line-height:1.8;color:var(--ink-soft);margin:12px 0 0;">' + a.desc.replace(/你/g, '她') + '</p>';
+
+  document.getElementById('chem-badge').textContent = chemistryLabel(stage1Result.primary, aType);
+  document.getElementById('chem-text').textContent = chemistryText(stage1Result.primary, aType);
+
+  document.getElementById('copy-url-btn').onclick = function(){
+    var url = location.href;
+    var msg = document.getElementById('url-msg');
+    function done(ok){ msg.textContent = ok ? '已複製網址，傳給朋友讓他們也測測看' : '複製失敗，請手動複製網址列'; }
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(function(){ done(true); }).catch(function(){ done(false); });
+    } else {
+      done(false);
+    }
+  };
+}
+
+document.getElementById('retake-btn').addEventListener('click', function(){
+  state = { asked: [pickOpener(BANK)], picks: [], deltas: [], pos: 0 };
+  state2 = { i: 0, picks: [] };
+  stage1Result = null;
+  document.getElementById('url-msg').textContent = '';
+  finalEl.hidden = true;
+  quizEl.hidden = false;
+  renderQuestion();
+});
+
+/* ---------- T / P read: 8 fixed questions, answered as the second half of
+   stage 1 (right after the 12 adaptive personality questions, before the
+   result screen). Kept apart from the six trait types on purpose — it
+   reports a plain percentage split and never states a conclusion;
+   interpreting it is left entirely to the reader. ---------- */
+var TP_BANK = [
+  { q: "在感情裡，妳通常傾向扮演哪一種角色？", opts: [
+    ["比較主動保護、照顧對方", 2],
+    ["稍微偏向主動一點，但也會視情況調整", 1],
+    ["兩種都可以，沒有特別偏好", 0],
+    ["稍微偏向被照顧一點，但也會主動", -1],
+    ["比較習慣被照顧、依靠對方", -2],
+  ]},
+  { q: "撇開特定場合不談，妳平常比較常穿：", opts: [
+    ["俐落中性，偏陽剛的款式", 2],
+    ["中性偏簡約，但不排斥女性化單品", 1],
+    ["看心情，陽剛女性化都會穿", 0],
+    ["偏女性化，但也喜歡簡單俐落的單品", -1],
+    ["比較女性化、柔美的款式", -2],
+  ]},
+  { q: "朋友形容妳給人的氣質，比較接近：", opts: [
+    ["帥氣、有安全感", 2],
+    ["偏中性，帶一點帥氣", 1],
+    ["介於中間，很難用一個詞形容", 0],
+    ["偏柔和，帶一點甜美", -1],
+    ["甜美、溫柔", -2],
+  ]},
+  { q: "跟另一半相處時，妳比較常主動做的事是：", opts: [
+    ["開車、帶路、處理費用這類主導性的事", 2],
+    ["比較常主動，但不是每次都這樣", 1],
+    ["看對方，沒有固定模式", 0],
+    ["比較常配合對方安排", -1],
+    ["幾乎都讓對方主導安排", -2],
+  ]},
+  { q: "過去身邊的人比較常說妳：", opts: [
+    ["很man、很有肩膀", 2],
+    ["偏中性、不會很女性化", 1],
+    ["說不太上來，兩種特質都有", 0],
+    ["偏女孩子氣", -1],
+    ["很嬌小、很女生", -2],
+  ]},
+  { q: "有情緒時，妳表達情緒的方式比較接近：", opts: [
+    ["不太外露，習慣自己消化", 2],
+    ["偏內斂，但也會適時表達", 1],
+    ["看情況，沒有固定風格", 0],
+    ["偏外放，情緒比較容易被看出來", -1],
+    ["情緒很直接，藏不住", -2],
+  ]},
+  { q: "理想中的自己在關係裡，妳比較偏向：", opts: [
+    ["撐起一片天、讓對方安心依靠", 2],
+    ["偏向給予安全感，但也希望被理解", 1],
+    ["兩個人互相依靠，沒有固定角色", 0],
+    ["偏向被疼愛、被呵護", -1],
+    ["完全被照顧、被捧在手心上", -2],
+  ]},
+  { q: "面對「T / P / 不分」這類標籤，妳的感覺是：", opts: [
+    ["滿認同自己偏 T 的那一塊", 2],
+    ["偏 T 一點，但不喜歡被定義死", 1],
+    ["覺得標籤不太適合自己，比較偏不分", 0],
+    ["偏 P 一點，但不喜歡被定義死", -1],
+    ["滿認同自己偏 P 的那一塊", -2],
+  ]},
+];
+var tpState = { i: 0, answers: [] };
+var TOTAL_STAGE1 = TOTAL_Q + TP_BANK.length;
+
+})();
+</script>
