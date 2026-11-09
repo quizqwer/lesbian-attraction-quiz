@@ -441,6 +441,27 @@ footer{
 <script>
 (function(){
 
+/* ---------------- analytics (anonymous, aggregate only) ----------------
+   Fill in APPS_SCRIPT_URL with your own Google Apps Script web app URL
+   (see setup instructions). Only {event, type, ts} is ever sent — no IP,
+   no device info, no identifiers. Leave the string empty to disable entirely.
+   event is "start" (someone opened the quiz), "stage1_complete" (finished
+   the first 20 questions, type is the primary personality type) or
+   "complete" (finished both stages, type is "primary-attraction", e.g.
+   "sun-boss", so the sheet can break down the full combo). */
+var APPS_SCRIPT_URL = "";
+function logEvent(eventName, typeKey){
+  if(!APPS_SCRIPT_URL) return;
+  try{
+    fetch(APPS_SCRIPT_URL, {
+      method:"POST",
+      mode:"no-cors",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body: JSON.stringify({ event: eventName, type: typeKey || "", ts: new Date().toISOString() })
+    }).catch(function(){ /* fail silently — a quiz should never break over analytics */ });
+  }catch(e){ /* fail silently — a quiz should never break over analytics */ }
+}
+
 var ICONS = {
   sun:   '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v3M12 18.5v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2.5 12h3M18.5 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
   iron:  '<path d="M20 14.6A8.4 8.4 0 1 1 9.4 4a7 7 0 0 0 10.6 10.6z"/>',
@@ -972,6 +993,7 @@ var state2 = { i: 0, picks: [] };
 })();
 
 document.getElementById('start-btn').addEventListener('click', function(){
+  logEvent("start");
   startEl.hidden = true;
   quizEl.hidden = false;
   state = { asked: [pickOpener(BANK)], picks: [], deltas: [], pos: 0, phase: 'personality' };
@@ -1168,6 +1190,7 @@ function showResult(){
   document.getElementById('r-desc').textContent = r.desc;
   document.getElementById('r-flavor').textContent = hasSecondary ? FLAVOR[secondary] : PURE_LINE;
   stage1Result = { primary: primary, secondary: secondary, hasSecondary: hasSecondary };
+  logEvent("stage1_complete", primary);
 
   var secCard = document.getElementById('secondary-card');
   if (hasSecondary){
@@ -1271,6 +1294,8 @@ function finishStage2(){
 
   document.getElementById('chem-badge').textContent = chemistryLabel(stage1Result.primary, aType);
   document.getElementById('chem-text').textContent = chemistryText(stage1Result.primary, aType);
+
+  logEvent("complete", stage1Result.primary + "-" + aType);
 
   document.getElementById('copy-url-btn').onclick = function(){
     var url = location.href;
